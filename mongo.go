@@ -1,28 +1,47 @@
 package xk6_mongo
 
 import (
+	"context"
 	"fmt"
+	"github.com/ganinw13120/xk6-mongo/database"
+	"github.com/ganinw13120/xk6-mongo/mongo"
 	k6modules "go.k6.io/k6/js/modules"
+	"go.mongodb.org/mongo-driver/bson"
 )
 
-// Register the extension on module initialization, available to
-// import from JS as "k6/x/mongo".
 func init() {
 	k6modules.Register("k6/x/mongo", new(Mongo))
 }
 
-// Mongo is the k6 extension for a Mongo client.
 type Mongo struct{}
 
-// Client is the Mongo client wrapper.
-type Client struct {
+func main() {
+	client, err := database.NewMongoDBConnection(context.TODO(), "mongodb+srv://spider-data-history:wYxoSKhlt6Np7060@spider-dev.673kr.mongodb.net/")
+	if err != nil {
+		panic(err)
+	}
+	db := database.NewMongoDB(client)
+	fmt.Println("Connected")
+	col := client.Database("history").Collection("history-account")
+	var result interface{}
+
+	err = db.FindOne(context.TODO(), col, &result, bson.E{"id", ""})
+	fmt.Println(result)
+	fmt.Println(err)
+	//as := Mongo{}
+	//as.NewClient("mongodb://gan:lHxWqJM30n3gthny@spider-dev.673kr.mongodb.net", "history", "history-post", "")
+	//as.NewClient("mongodb+srv://spider-data-history:wYxoSKhlt6Np7060@spider-dev.673kr.mongodb.net/", "history", "history-post", "")
 }
 
-// NewClient represents the Client constructor (i.e. `new mongo.Client()`) and
-// returns a new Mongo client object.
-// connURI -> mongodb://username:password@address:port/db?connect=direct
-func (*Mongo) NewClient(connURI string) interface{} {
-	fmt.Println("asd")
+func (*Mongo) NewClient(uri, database, collection string, pipeline interface{}) interface{} {
+	client, err := mongo.NewMongoDBConnection(context.TODO(), uri)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
 
-	return &Client{}
+	col := client.Database(database).Collection(collection)
+	db := mongo.NewMongoDB(client, col)
+
+	return db
 }

@@ -1,16 +1,29 @@
 import xk6_mongo from 'k6/x/mongo';
 
+const client = xk6_mongo.newClient('mongodb://localhost:27017/', "db","collection");
 
-const client = xk6_mongo.newClient('mongodb://localhost:27017');
+export const options = {
+    vus: 10,
+    duration: '5m',
+}
+
 export default ()=> {
-
-    let doc = {
-        correlationId: `test--mongodb`,
-        title: 'Perf test experiment',
-        url: 'example.com',
-        locale: 'en',
-        time: `${new Date(Date.now()).toISOString()}`
-      };
-
-      client.insert("testdb", "testcollection", doc);
+    const result = client.aggregate([
+        {
+            $match: {
+                id: "",
+            },
+        },
+        {
+            $project: {
+                meta: 1,
+                collected_at: 1
+            },
+        },
+        {
+            $sort: {
+                collected_at: -1,
+            },
+        },
+    ])
 }
